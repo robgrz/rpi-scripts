@@ -13,12 +13,14 @@
 #
 apt-get install -y -q qemu-user-static curl unzip zip parted coreutils hardlink
 
+MOTION_BUILD=525
+MOTION_FILE=carbidemotion-$MOTION_BUILD.deb
 #
 # Input files
 #
 ZIP=2020-12-02-raspios-buster-armhf.zip
 IMG=2020-12-02-raspios-buster-armhf.img
-IMG2=rpi-carbidemotion.img
+IMG2=rpi-carbidemotion-$MOTION_BUILD.img
 LOOP=/dev/loop7
 LOOPpart=/dev/loop7p2
 # download the OS image file as zip 
@@ -32,8 +34,8 @@ if [ ! -e $IMG ] ; then
 fi
 
 
-if [ ! -e carbidemotion-523.deb ] ; then
-	curl -O -L https://motion-pi.us-east-1.linodeobjects.com/carbidemotion-523.deb
+if [ ! -e $MOTION_FILE ] ; then
+	curl -O -L https://motion-pi.us-east-1.linodeobjects.com/$MOTION_FILE
 fi
 
 # we need the loopback devices to support partitioned devices, so force this on
@@ -69,7 +71,7 @@ cp /usr/bin/qemu-arm-static image/usr/bin/
 
 # copy the carbide motion file into the image
 mkdir -p image/tmp/discard
-cp carbidemotion-523.deb image/tmp/discard
+cp $MOTION_FILE image/tmp/discard
 
 #
 # Delayed launcher so that CM does not start until the user is done configuring
@@ -104,7 +106,7 @@ chroot image apt-mark manual samba
 #
 # Install carbide motion
 #
-chroot image/ apt-get install -q -y /tmp/discard/carbidemotion-523.deb 
+chroot image/ apt-get install -q -y /tmp/discard/$MOTION_FILE
 
 
 #
@@ -137,7 +139,7 @@ chroot image/ apt-get install -q -y arandr
 #
 # Install carbide motion
 #
-chroot image/ apt-get install -q -y /tmp/discard/carbidemotion-523.deb 
+chroot image/ apt-get install -q -y /tmp/discard/$MOTION_FILE
 
 
 
@@ -231,4 +233,5 @@ if [ ! -e KEEP ] ; then
 	sync
 	losetup -d $LOOP
 	zip -9 rpi-carbidemotion.zip $IMG2
+	s3cmd put --acl-public $IMG2 s3://motion-pi
 fi
